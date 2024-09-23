@@ -94,7 +94,8 @@ Next each of these new numbers are divided by the sum of all of the numbers.  Th
 This results in a list of probabilities that say, “If someone picks randomly based on these scores, here’s the chance they would choose each one.”
 
 
-> [!NOTE] Softmax activation example
+> [!NOTE]
+> **Softmax activation example**<p>
 > Suppose you have a group of three friends and each one gives a score for how much they like a certain movie.<p>
 > You want to turn these scores into probabilities, showing how likely it is that each person will pick this movie as their favorite.<p>
 > Let say they give scores of 2, 1, 0 for a movie. Using Softmax you can convert those scores into probabilities like this:
