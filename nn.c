@@ -13,6 +13,48 @@ typedef struct {
     int input_size, output_size;
 } Layer;
 
+/*
+Apply the ReLU activation function in the hidden layers:
+
+for (int i = 0; i < HIDDEN_SIZE; i++) {
+    hidden_output[i] = hidden_output[i] > 0 ? hidden_output[i] : 0;
+}
+*/
+
+
+/// @brief Compute probabilities by applying the softmax function to the output layer.
+/// @param input
+/// @param size
+void softmax(float *input, int size) {
+    float max = input[0], sum = 0;
+    for (int i = 1; i < size; i++) {
+        if (input[i] > max) {
+            max = input[i];
+        }
+    }
+    for (int i = 0; i < size; i++) {
+        input[i] = expf(input[i] - max);
+        sum += input[i];
+    }
+    for (int i=0; i < size; i++) {
+        input[i] /= sum;
+    }
+}
+
+
+/// @brief Compute the output of an NN layer given an input.
+/// @param layer
+/// @param input
+/// @param output
+void forward(Layer *layer, float *input, float *output) {
+    for (int i=0; i < layer->output_size; i++) {
+        output[i] = layer->biases[i];
+        for (int j=0; j < layer->input_size; j++) {
+            output[i] += input[j] * layer->weights[j * layer->output_size + i];
+        }
+    }
+}
+
 
 /// @brief Initializes the weights & biases for a given layer.  Weights are set using Kaiming He Initialization.
 /// @param layer
