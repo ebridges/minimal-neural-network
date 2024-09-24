@@ -105,10 +105,51 @@ This results in a list of probabilities that say, “If someone picks randomly b
 >
 > So, we know that the highest score of 2 has a 66.5% probability, the score of 1 a 24.5%, and the score of 0 a 9% chance of being chosen.
 
+## Back propagation
+The reversed flow of the forward pass, by propagating the error from the output layer until reaching the input layer, passing through the hidden layers.
+
+When a neural network makes a prediction, you calculate the loss, which is the difference between the predicted value and the actual value.
+
+Back propagation computes how much each neuron’s output contributed to that loss (using the chain rule of differentiation).
+
+The gradient is this contribution — it tells the network how much each neuron needs to adjust its parameters (weights and biases) to reduce the loss in future predictions.
+
+Through iterative updates, back propagation allows the network to improve its performance on a given task by improving its accuracy.
+
+### Updating weights
+
+The weights are updated in the backwards pass such that the new weight equals old weight minus learning rate times gradient of loss with respect to weight.
+
+```c
+layer->weights[idx] -= learning_rate * (output_grad[i] + input[j])
+```
+
+### Update bias
+
+The new bias equals the old bias minus the learning rate times the gradient of loss with respect to bias.
+
+```c
+layer->biases[i] -= learning_rate * output_grad[i];
+```
+
+### Input gradient calculation
+
+The input gradient is an optional parameter.
+
+```c
+input_grad[j] += output_grad[i] * layer->weights[idx];
+```
+
+## Training
+
+Once forward and backward propagation have been implemented, you have a neural network that is ready to be trained.
+
+Training involves calling these propagation functions in a loop to adjust the network's weights and biases, minimizing the loss and enhancing the model's ability to make accurate predictions with each pass.
 
 ## References
 
 - https://x.com/konradgajdus/status/1837196363735482396
+- https://github.com/konrad-gajdus/miniMNIST-c
 - https://en.wikipedia.org/wiki/MNIST_database
 - https://github.com/konrad-gajdus/miniMNIST-c
 - https://yann.lecun.com/exdb/mnist/
