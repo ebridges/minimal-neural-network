@@ -146,6 +146,17 @@ Once forward and backward propagation have been implemented, you have a neural n
 
 Training involves calling these propagation functions in a loop to adjust the network's weights and biases, minimizing the loss and enhancing the model's ability to make accurate predictions with each pass.
 
+### Steps
+
+1. Training is done in batches (`BATCH_SIZE`) based on a subset (`TRAIN_SPLIT`) of the overall number of images (`data.nImages`) loaded
+2. Training consists of:
+   - A forward pass of the input to the hidden layer
+     - normalize the elements of hidden_output array to be >= 0.
+   - A forward pass from the hidden layer to the output layer
+   - Apply softmax to final_output
+
+![](training_plot.png)
+
 ## References
 
 - https://x.com/konradgajdus/status/1837196363735482396
