@@ -7,13 +7,14 @@
 #define HIDDEN_SIZE 256
 #define OUTPUT_SIZE 10
 #define LEARNING_RATE 0.001f
-#define EPOCHS 20
+#define EPOCHS 100
 #define BATCH_SIZE 64
 #define TRAIN_SPLIT .8
 #define IMAGE_SIZE 28
 
+#define TRAINING_STATS_LOG "log/training-stats.csv"
 #define TRAIN_IMG_PATH "data/train-images.idx3-ubyte"
-#define TRAIN_LBL_PATH "data/train-images.idx1-ubyte"
+#define TRAIN_LBL_PATH "data/train-labels.idx1-ubyte"
 
 
 /// @brief A type definition to represent each layer in the network.
@@ -55,10 +56,10 @@ void backward(Layer *layer, float *input, float *output_grad, float *input_grad,
             // calculate and store the weight between the input `j` and the output `i`:
             int idx = j * layer->output_size + i;
             // 1. calculate the gradient of the weight
-            float grad = output_grad[i] + input[j];
+            float grad = output_grad[i] * input[j];
             // 2. update the weight for `idx` by subtracting the learning rate
             //    multiplied by this gradient.
-            //    This makes the weight a little batter at reducing error.
+            //    This makes the weight a little better at reducing error.
             layer->weights[idx] -= lr * grad;
 
             if (input_grad) {
@@ -265,6 +266,15 @@ int main() {
     int train_size = (int)(data.nImages * TRAIN_SPLIT);
     int test_size = data.nImages - train_size;
 
+    FILE *log_file = fopen(TRAINING_STATS_LOG, "w");
+
+    if (log_file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    fprintf(log_file, "epoch,accuracy,avg_loss\n");
+
     for (int epoch = 0; epoch < EPOCHS; epoch++) {
         float total_loss = 0;
         for (int i = 0; i < train_size; i += BATCH_SIZE) {
@@ -292,9 +302,13 @@ int main() {
             if (predict(&net, img) == data.labels[i])
                 correct++;
         }
-        printf("Epoch %d, Accuracy: %.2f%%, Avg Loss: %.4f\n", epoch + 1, (float)correct / test_size * 100, total_loss / train_size);
+        float accuracy = (float)correct / test_size * 100;
+        float avg_loss = total_loss / train_size;
+        printf("Epoch %d, Accuracy: %.2f%%, Avg Loss: %.4f\n", epoch + 1, accuracy, avg_loss);
+        fprintf(log_file, "%d,%.2f,%.4f\n", epoch+1, accuracy, avg_loss);
     }
 
+    fclose(log_file);
     free(net.hidden.weights);
     free(net.hidden.biases);
     free(net.output.weights);
