@@ -56,3 +56,12 @@ a.out
 nn
 .venv/
 log/
+img/
+__pycache__/
+
+
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/lambda.zip
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
