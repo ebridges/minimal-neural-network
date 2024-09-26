@@ -157,6 +157,16 @@ Training involves calling these propagation functions in a loop to adjust the ne
 
 ![](training_plot.png)
 
+After running training across the dataset with 100 epochs, subsequent epochs past 50 don't increase the accuracy significantly.
+
+## User interface
+
+- display a 10x10 grid of a random sampling of images from the dataset.
+- the user should be able to select one of those images
+- when the user selects an image, on the right side it should display the prediction of the NN of what number is in the image.
+- under that, a pair of "thumbs up"/"thumbs down" buttons that allow the user to indicate whether the guess was correct
+- under that, a running score of correct predictions / total predictions
+
 ## References
 
 - https://x.com/konradgajdus/status/1837196363735482396
