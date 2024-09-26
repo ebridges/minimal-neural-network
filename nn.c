@@ -3,11 +3,11 @@
 #include <math.h>
 #include <time.h>
 
-#define INPUT_SIZE 784
+#define INPUT_SIZE 784 // 28x28 pixel grid
 #define HIDDEN_SIZE 256
 #define OUTPUT_SIZE 10
 #define LEARNING_RATE 0.001f
-#define EPOCHS 100
+#define EPOCHS 5
 #define BATCH_SIZE 64
 #define TRAIN_SPLIT .8
 #define IMAGE_SIZE 28
@@ -15,7 +15,7 @@
 #define TRAINING_STATS_LOG "log/training-stats.csv"
 #define TRAIN_IMG_PATH "data/train-images.idx3-ubyte"
 #define TRAIN_LBL_PATH "data/train-labels.idx1-ubyte"
-
+#define TRAINED_MODEL_FILE "data/trained-model.json"
 
 /// @brief A type definition to represent each layer in the network.
 /// @param weights A flattened array representing the weight matrix.
@@ -35,7 +35,6 @@ typedef struct {
     unsigned char *images, *labels;
     int nImages;
 } InputData;
-
 
 
 /// @brief This function adjusts the weights and biases of the given `layer` based on how much
@@ -248,6 +247,71 @@ void shuffle_data(unsigned char *images, unsigned char *labels, int n) {
 }
 
 
+// Function to output array of floats as JSON array
+void print_float_array(FILE *file, float *array, int size) {
+    fprintf(file, "[");
+    for (int i = 0; i < size; i++) {
+        fprintf(file, "%f", array[i]);
+        if (i < size - 1) {
+            fprintf(file, ", ");
+        }
+    }
+    fprintf(file, "]");
+}
+
+
+// Function to output a Layer as JSON
+void print_layer_as_json(FILE *file, Layer layer) {
+    fprintf(file, "{\n");
+
+    fprintf(file, "    \"input_size\": %d,\n", layer.input_size);
+    fprintf(file, "    \"output_size\": %d,\n", layer.output_size);
+
+    // Print weights array
+    fprintf(file, "    \"weights\": ");
+    print_float_array(file, layer.weights, layer.input_size * layer.output_size);
+    fprintf(file, ",\n");
+
+    // Print biases array
+    fprintf(file, "    \"biases\": ");
+    print_float_array(file, layer.biases, layer.output_size);
+    fprintf(file, "\n");
+
+    fprintf(file, "}");
+}
+
+
+// Function to output the Network as JSON
+void print_nn_as_json(Network net, const char *filename) {
+    FILE *file = fopen(filename, "w"); // Open file for writing
+
+    if (file == NULL) {
+        printf("Error opening file!\n");
+        return;
+    }
+
+    fprintf(file, "{\n");
+
+    // Print input data source
+    fprintf(file, "\"input_data\": {");
+    fprintf(file, "    \"training_image_file\": \"%s\",", TRAIN_IMG_PATH);
+    fprintf(file, "    \"training_label_file\": \"%s\"", TRAIN_LBL_PATH);
+    fprintf(file, "},\n");
+
+    // Print hidden layer
+    fprintf(file, "  \"hidden\": ");
+    print_layer_as_json(file, net.hidden);
+    fprintf(file, ",\n");
+
+    // Print output layer
+    fprintf(file, "  \"output\": ");
+    print_layer_as_json(file, net.output);
+    fprintf(file, "\n");
+
+    fprintf(file, "}\n");
+}
+
+
 int main() {
     Network net;
     InputData data = {0};
@@ -307,6 +371,8 @@ int main() {
         printf("Epoch %d, Accuracy: %.2f%%, Avg Loss: %.4f\n", epoch + 1, accuracy, avg_loss);
         fprintf(log_file, "%d,%.2f,%.4f\n", epoch+1, accuracy, avg_loss);
     }
+
+    print_nn_as_json(net, TRAINED_MODEL_FILE);
 
     fclose(log_file);
     free(net.hidden.weights);
