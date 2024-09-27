@@ -67,7 +67,7 @@ data "archive_file" "lambda_zip" {
 resource "aws_lambda_function" "mnist_lambda" {
   function_name = "mnist-image-grid"
   role          = aws_iam_role.lambda_execution_role.arn
-  handler       = "load_image_grid.lambda_handler"
+  handler       = "prediction_service.lambda_handler"
   runtime       = "python3.9"
 
   filename         = data.archive_file.lambda_zip.output_path
@@ -78,7 +78,7 @@ resource "aws_lambda_function" "mnist_lambda" {
       S3_BUCKET = var.bucket_name
     }
   }
-  tiemout = 10
+  timeout = 10
 }
 
 # Create API Gateway HTTP API
@@ -95,9 +95,24 @@ resource "aws_apigatewayv2_integration" "lambda_integration" {
   payload_format_version = "2.0"
 }
 
-resource "aws_apigatewayv2_route" "mnist_route" {
+# Create route for "GET /urls"
+resource "aws_apigatewayv2_route" "mnist_route_urls" {
   api_id    = aws_apigatewayv2_api.mnist_api.id
-  route_key = "GET /mnist-urls"
+  route_key = "GET /urls"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+}
+
+# Create route for "GET /ui"
+resource "aws_apigatewayv2_route" "mnist_route_ui" {
+  api_id    = aws_apigatewayv2_api.mnist_api.id
+  route_key = "GET /ui"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+}
+
+# Create route for "POST /prediction"
+resource "aws_apigatewayv2_route" "mnist_route_prediction" {
+  api_id    = aws_apigatewayv2_api.mnist_api.id
+  route_key = "POST /prediction"
   target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 

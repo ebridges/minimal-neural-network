@@ -1,0 +1,124 @@
+import base64
+import random
+import boto3
+import json
+from image_data import metadata
+
+# AWS S3 Configuration
+S3_BUCKET = 'com.eqbridges.mnist-img-archive'
+REGION = 'us-east-1'
+
+# Function to generate pre-signed S3 URLs
+def generate_s3_presigned_url(s3_client, bucket, key, expiration=3600):
+    return s3_client.generate_presigned_url('get_object', Params={'Bucket': bucket,
+            'ResponseContentType': 'image/png', 'Key': key}, ExpiresIn=expiration)
+
+def get_random_image_urls(n=100):
+    """
+    Returns n random image URLs from the bucket.
+    """
+    # Ensure n is in range of 1:100
+    n = min(max(1,n), 100)
+
+    # Select n random entries from the metadata
+    random_metadata = random.sample(metadata, n)
+
+    # Initialize S3 client
+    s3 = boto3.client('s3', region_name=REGION)
+
+    # Generate pre-signed URLs based on the selected metadata
+    image_urls = [ generate_s3_presigned_url(s3, S3_BUCKET, entry) for entry in random_metadata ]
+
+    return image_urls
+
+def predict_value(filename):
+    label = filename.split('-')[-1].split('.')[0]
+    return label
+
+# Lambda handler function
+def lambda_handler(event, context):
+    from pprint import pprint
+
+    pprint(event)
+
+    http_method = event.get('requestContext', {}).get('http', {}).get('method', 'missing')
+    if http_method == 'missing':
+        return {
+            "statusCode": 400,
+            "body": json.dumps({'error': 'malformed http request'})
+        }
+    path = event.get('requestContext', {}).get('http', {}).get('path', 'missing')
+    if http_method == 'missing':
+        return {
+            "statusCode": 400,
+            "body": json.dumps({'error': 'malformed path'})
+        }
+
+    print(f'method: {http_method} and path: {path}')
+    if http_method == 'GET' and path.endswith('/urls'):
+        return handle_get_urls(event)
+    elif http_method == 'GET' and path.endswith('/ui'):
+        print('handle_get_ui called')
+        return handle_get_ui(event)
+    elif http_method == 'POST' and path.endswith('/prediction'):
+        pass
+    else:
+        return {
+            "statusCode": 400,
+            "body": json.dumps({'error': f'unrecognized method/path: "{http_method} {path}"'})
+        }
+
+# route handler functions
+def handle_get_ui(event):
+    print('handle_get_ui called')
+
+    with open('app.html', 'r') as file:
+        content = file.read()
+
+    encoded_content = base64.b64encode(content.encode('utf-8')).decode('utf-8')
+
+    print('handle_get_ui called: ', encoded_content)
+
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "text/html",
+        },
+        "body": encoded_content,
+        "isBase64Encoded": True
+    }
+
+def handle_get_urls(event):
+    n = int(event.get('queryStringParameters', {}).get('n', 100))  # Default to 100 if n is not provided
+    data = get_random_image_urls(n)
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "body": json.dumps(data)
+    }
+
+def handle_post_prediction(event):
+    filename = event.get('pathParameters', {}).get('filename', '')
+    if not filename:
+        return {
+            "statusCode": 400,
+            "body": json.dumps({'error':'no filename specified'})
+        }
+
+    predicted_value = predict_value(filename)
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "body": json.dumps({'predicted_value': predicted_value})
+    }
+
+
+# For testing locally
+if __name__ == '__main__':
+    random_image_urls = get_random_image_urls(n=10)
+    for image in random_image_urls:
+        print(image)

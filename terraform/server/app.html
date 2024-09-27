@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MNIST Image Grid</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 50px;
+    }
+
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 50px);
+      grid-template-rows: repeat(10, 50px);
+      gap: 10px;
+    }
+
+    .image-grid img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      transition: border-color 0.2s ease;
+    }
+
+    .image-grid img:hover,
+    .image-grid img.selected {
+      border-color: #007bff;
+    }
+
+    .prediction-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      min-width: 300px;
+      text-wrap: balance;
+      max-width: 400px;
+    }
+
+    .explanation {
+      padding: 25px;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .credit {
+      padding: 10px;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .prediction-box img {
+      width: 120px;
+      height: 120px;
+      background-color: #f0f0f0;
+      display: block;
+      margin-bottom: 20px;
+    }
+
+    .prediction-box h2 {
+      font-size: 24px;
+      margin: 0;
+      margin-bottom: 10px;
+    }
+
+    .prediction-box .result {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .buttons button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .buttons .correct {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .buttons .incorrect {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .score {
+      font-size: 16px;
+      color: #666;
+    }
+
+    .github-badge {
+      display: flex;
+      align-items: center;
+      padding: 10px 25px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-family: Helvetica, sans-serif;
+      text-decoration: none;
+      color: #333;
+      background-color: #f9f9f9;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      width: fit-content;
+    }
+
+    .github-badge:hover {
+      background-color: #f0f0f0;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .github-badge img {
+      width: 60px;
+      height: 60px;
+      margin-top: 15px;
+      margin-right: 15px;
+      background-color: #f9f9f9;
+    }
+
+    .github-badge img:hover {
+      background-color: #f0f0f0;
+    }
+
+    .github-badge .content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .github-badge .title {
+      font-size: 18px;
+      font-weight: normal;
+      margin: 0;
+      color: mediumblue;
+      text-align: right;
+    }
+
+    .github-badge .description {
+      font-size: 14px;
+      color: #555;
+      margin-top: 2px;
+      text-align: left;
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="prediction-box">
+      <h2>Source image</h2>
+      <img id="selectedImage" src="https://dummyimage.com/120/fff/fff.png" alt="Selected MNIST Image">
+      <div class="result" id="predictedNumber" align="center">Click an image<br/>to predict its value</div>
+      <div class="buttons">
+        <button class="correct" id="correctButton">Correct</button>
+        <button class="incorrect" id="incorrectButton">Incorrect</button>
+      </div>
+      <div class="score" id="scoreDisplay">Score: 0 / 0 (0.00% correct)</div>
+      <div class="explanation">
+        <p>This site uses a homemade neural net trained on the MNIST dataset to predict the value displayed in a given image.</p>
+        <p>Test it out to see how accurate it is at guessing what number is in the image you select.</p>
+      </div>
+      <div class="content">
+        <a class="github-badge" href="https://github.com/ebridges/minimal-neural-network" target="_blank">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c2/GitHub_Invertocat_Logo.svg" alt="GitHub Logo">
+        <div class="title">Minimal Neural Network</div>
+        <div class="description">Minimal neural network implemented & trained in C.</div>
+      </a>
+      </div>
+  <div class="credit"><a href="https://b.ridg.es/contact">@eqbridges</a></div>
+    </div>
+
+    <div id="image-grid" class="image-grid"/>
+  </div>
+
+  <script>
+    let score = {
+      correct: 0,
+      total: 0
+    };
+
+    // Mock function for getting prediction from backend
+    const getPrediction = (url) => Math.floor(Math.random() * 10);
+
+    function getLabelForImage(url) {
+      const filename = url.split('/').pop(); // Extract the filename from the URL
+      const label = filename.split('-')[1].split('.')[0]; // Get the label part from the filename
+      return parseInt(label, 10); // Convert to integer
+    }
+
+    // Fetch the MNIST image URLs from the API and populate the grid
+    async function fetchMNISTImages() {
+      document.getElementById('correctButton').hidden = true;
+      document.getElementById('incorrectButton').hidden = true;
+      try {
+        const response = await fetch('https://84egt42ybl.execute-api.us-east-1.amazonaws.com/dev/urls');
+        const imageUrls = await response.json();
+        populateImageGrid(imageUrls);
+      } catch (error) {
+        console.error('Error fetching MNIST images:', error);
+      }
+    }
+
+    // Populate the image grid with the fetched MNIST image URLs
+    function populateImageGrid(imageUrls) {
+      const imageGrid = document.getElementById('image-grid');
+      imageGrid.innerHTML = ''; // Clear the grid
+
+      imageUrls.forEach((url, index) => {
+        const imgElement = document.createElement('img');
+        imgElement.src = url;
+        imgElement.alt = `MNIST Image ${index + 1}`;
+        imgElement.addEventListener('click', (e) => {
+          if (e.target.tagName === 'IMG') {
+            // Clear the 'selected' class from all images in the grid
+            document.querySelectorAll('.image-grid img').forEach(img => img.classList.remove('selected'));
+
+            // Add the 'selected' class to the clicked image
+            e.target.classList.add('selected');
+
+            // Update selected image and prediction
+            const predictedNumber = getPrediction(url);
+            const label = getLabelForImage(url); // Get the label from the image URL
+            console.log('Label:', label);
+            document.getElementById('selectedImage').src = url;
+            document.getElementById('predictedNumber').textContent = `Predicted value: ${predictedNumber}`;
+
+            // Check if prediction matches the label and display result
+            if (predictedNumber === label) {
+              document.getElementById('correctButton').hidden = false;
+              document.getElementById('incorrectButton').hidden = true;
+              score.correct++;
+            } else {
+              document.getElementById('correctButton').hidden = true;
+              document.getElementById('incorrectButton').hidden = false;
+            }
+
+            score.total++;
+            updateScore();
+          }
+        });
+        imageGrid.appendChild(imgElement);
+      });
+    }
+
+    // Update score when user selects correct/incorrect
+    correctButton.addEventListener('click', () => {
+      score.correct++;
+      score.total++;
+      updateScore();
+    });
+
+    incorrectButton.addEventListener('click', () => {
+      score.total++;
+      updateScore();
+    });
+
+    function updateScore() {
+      const accuracy = score.total > 0 ? ((score.correct / score.total) * 100).toFixed(2) : '0.00';
+      scoreDisplay = `Score: ${score.correct} / ${score.total} (${accuracy}% correct)`
+      document.getElementById('scoreDisplay').textContent = scoreDisplay;
+    }
+
+
+    // Call the fetch function on page load
+    window.onload = fetchMNISTImages;
+  </script>
+</body>
+</html>
