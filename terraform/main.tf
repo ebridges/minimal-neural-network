@@ -60,12 +60,12 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_policy_attachment" {
 # Package and deploy the Lambda function
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/server"  # Path to your Python code
+  source_dir  = "${path.module}/../server"  # Path to your Python code
   output_path = "${path.module}/lambda.zip"
 }
 
 resource "aws_lambda_function" "mnist_lambda" {
-  function_name = "mnist-image-grid"
+  function_name = "mnist-predictor"
   role          = aws_iam_role.lambda_execution_role.arn
   handler       = "prediction_service.lambda_handler"
   runtime       = "python3.9"

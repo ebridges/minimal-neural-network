@@ -207,10 +207,21 @@
     };
 
     // Mock function for getting prediction from backend
-    const getPrediction = (url) => Math.floor(Math.random() * 10);
+    async function getPrediction(url) {
+      parsed_url = URL.parse(url)
+      const filename = parsed_url.pathname.split('/').pop(); // Extract the filename from the URL
+      try {
+        const response = await fetch('https://84egt42ybl.execute-api.us-east-1.amazonaws.com/dev/prediction/'+filename);
+        const result = await response.json();
+        return result['predicted_result']
+      } catch (error) {
+        console.error('Error fetching prediction for image: '+filename, error);
+      }
+    }
 
     function getLabelForImage(url) {
-      const filename = url.split('/').pop(); // Extract the filename from the URL
+      parsed_url = URL.parse(url)
+      const filename = parsed_url.pathname.split('/').pop(); // Extract the filename from the URL
       const label = filename.split('-')[1].split('.')[0]; // Get the label part from the filename
       return parseInt(label, 10); // Convert to integer
     }
@@ -237,37 +248,39 @@
         const imgElement = document.createElement('img');
         imgElement.src = url;
         imgElement.alt = `MNIST Image ${index + 1}`;
-        imgElement.addEventListener('click', (e) => {
-          if (e.target.tagName === 'IMG') {
-            // Clear the 'selected' class from all images in the grid
-            document.querySelectorAll('.image-grid img').forEach(img => img.classList.remove('selected'));
-
-            // Add the 'selected' class to the clicked image
-            e.target.classList.add('selected');
-
-            // Update selected image and prediction
-            const predictedNumber = getPrediction(url);
-            const label = getLabelForImage(url); // Get the label from the image URL
-            console.log('Label:', label);
-            document.getElementById('selectedImage').src = url;
-            document.getElementById('predictedNumber').textContent = `Predicted value: ${predictedNumber}`;
-
-            // Check if prediction matches the label and display result
-            if (predictedNumber === label) {
-              document.getElementById('correctButton').hidden = false;
-              document.getElementById('incorrectButton').hidden = true;
-              score.correct++;
-            } else {
-              document.getElementById('correctButton').hidden = true;
-              document.getElementById('incorrectButton').hidden = false;
-            }
-
-            score.total++;
-            updateScore();
-          }
-        });
+        imgElement.addEventListener('click', imageClickHandler);
         imageGrid.appendChild(imgElement);
       });
+    }
+
+    async function imageClickHandler(e) {
+      if (e.target.tagName === 'IMG') {
+        // Clear the 'selected' class from all images in the grid
+        document.querySelectorAll('.image-grid img').forEach(img => img.classList.remove('selected'));
+
+        // Add the 'selected' class to the clicked image
+        e.target.classList.add('selected');
+
+        // Update selected image and prediction
+        const predictedNumber = await getPrediction(url);
+        const label = getLabelForImage(url); // Get the label from the image URL
+        console.log('Label:', label);
+        document.getElementById('selectedImage').src = url;
+        document.getElementById('predictedNumber').textContent = `Predicted value: ${predictedNumber}`;
+
+        // Check if prediction matches the label and display result
+        if (predictedNumber === label) {
+          document.getElementById('correctButton').hidden = false;
+          document.getElementById('incorrectButton').hidden = true;
+          score.correct++;
+        } else {
+          document.getElementById('correctButton').hidden = true;
+          document.getElementById('incorrectButton').hidden = false;
+        }
+
+        score.total++;
+        updateScore();
+      }
     }
 
     // Update score when user selects correct/incorrect

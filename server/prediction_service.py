@@ -3,10 +3,14 @@ import random
 import boto3
 import json
 from image_data import metadata
+from predictor import predict, load_trained_network
+from io import BytesIO
+from PIL import Image
 
 # AWS S3 Configuration
 S3_BUCKET = 'com.eqbridges.mnist-img-archive'
 REGION = 'us-east-1'
+
 
 # Function to generate pre-signed S3 URLs
 def generate_s3_presigned_url(s3_client, bucket, key, expiration=3600):
@@ -31,16 +35,49 @@ def get_random_image_urls(n=100):
 
     return image_urls
 
+
+def load_mnist_image(image_key):
+    # Create an S3 client
+    s3 = boto3.client('s3')
+
+    # Get the image from S3
+    response = s3.get_object(Bucket=S3_BUCKET, Key=image_key)
+    image_data = response['Body'].read()
+
+    # Load the image using PIL
+    image = Image.open(BytesIO(image_data))
+
+    # Convert the image to a flattened list of pixel values
+    pixel_values = list(image.getdata())
+
+    # Normalize the pixel values to be between 0 and 1
+    normalized_values = [pixel / 255.0 for pixel in pixel_values]
+
+    return normalized_values
+
+
+def object_name_from_filename(filename):
+    # Extract serial num from filename
+    serial_num = int(filename.split('-')[0])
+
+    valueA = serial_num // 1000
+    valueB = (serial_num % 1000) // 100
+
+    # Create the S3 object path
+    return f"{valueA}/{valueB}/{filename}"
+
+
+
 def predict_value(filename):
-    label = filename.split('-')[-1].split('.')[0]
-    return label
+    object_name = object_name_from_filename(filename)
+    filedata = load_mnist_image(object_name)
+    network = load_trained_network()
+    predicted_value = predict(network, filedata)
+    return predicted_value
+
 
 # Lambda handler function
 def lambda_handler(event, context):
-    from pprint import pprint
-
-    pprint(event)
-
     http_method = event.get('requestContext', {}).get('http', {}).get('method', 'missing')
     if http_method == 'missing':
         return {
@@ -58,10 +95,9 @@ def lambda_handler(event, context):
     if http_method == 'GET' and path.endswith('/urls'):
         return handle_get_urls(event)
     elif http_method == 'GET' and path.endswith('/ui'):
-        print('handle_get_ui called')
         return handle_get_ui(event)
-    elif http_method == 'POST' and path.endswith('/prediction'):
-        pass
+    elif http_method == 'POST' and '/prediction' in path:
+        return handle_post_prediction(event)
     else:
         return {
             "statusCode": 400,
