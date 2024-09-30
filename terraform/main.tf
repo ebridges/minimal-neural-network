@@ -112,7 +112,7 @@ resource "aws_apigatewayv2_route" "mnist_route_ui" {
 # Create route for "POST /prediction"
 resource "aws_apigatewayv2_route" "mnist_route_prediction" {
   api_id    = aws_apigatewayv2_api.mnist_api.id
-  route_key = "POST /prediction"
+  route_key = "POST /prediction/{filename}"
   target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
