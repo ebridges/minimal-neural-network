@@ -3,169 +3,26 @@
 > [!NOTE]
 > This is derivative of [an article on X](https://x.com/konradgajdus/status/1837196363735482396) with several other sources to fill out my background.
 
-Neural networks provide a more effective way to learn hypotheses when a model has a very large number of features, a number larger than linear or logistic regression is capable of scaling to.
+This is an implementation of a simple neural network using only the C standard library.  It's trained with the [MNIST archive](https://yann.lecun.com/exdb/mnist/) of handwritten numbers. The trained model is saved off in a platform independent way to be used by a Python lambda that does actual predictions using a simple HTML/JS user interface.
 
-At a very simple level a neuron is basically a computational unit that takes inputs from "dendrites" as electrical "spikes" which are channeled to outputs known as "axons".
-
-In the model of a neural network, the dendrites are input features $x_1 ... x_n$ and the output is the result of an hypothesis function.
-
-```mermaid
-graph LR
-    id1((x1))
-    id2((x2))
-    id3((x3))
-    id4((" "))
-    id5["`$$h_0$$`"]
-    id1-->id4
-    id2-->id4
-    id3-->id4
-    id4-->id5
-```
-
-The input features and parameters are a matrix:
-
-$$
-x=\begin{bmatrix}x_{0}\\ x_{1}\\ x_{2}\\ x_{3}\end{bmatrix}
-\theta=\begin{bmatrix}\theta_{0}\\ \theta_{1}\\ \theta_{2}\\ \theta_{3}\end{bmatrix}
-$$
-
-The first element ($x_0$) is known as the bias unit and is always equal to $1$.
-
-We use the same hypothesis function as when doing classification:
-
-$$
-\frac{1}{1+e^{-\theta T_x}}
-$$
-
-## Layers
-- The neural network will consist of 3 layers: input, hidden and output.
-- The number of neurons in each layer is determined by the characteristics of the dataset in use.
-- As we're using the MNIST dataset, and it provides handwritten digits in a 28x28 pixel format we will look to flatten each image into a single vector, and obtain an array of 784 elements that will server as our input layer.
-- The output layer will comprise 10 neurons, each corresponding to one of the possible outcomes: 0-9.
-
-### Input layer
-- Accepts 28x28 pixel images flattened into a 784 dimensional vector.
-
-### Hidden layer
-- Contains 256 neurons.
-
-### Output layer
-- Contains 10 neurons, one for each class of digit.
-
-## Processing input data
-Input data is read in from IDX files downloaded from the website of [Yann LeCun](https://yann.lecun.com/exdb/mnist/)
-
-## Weight initialization
-Layers are initialized using [Kaiming He Initialization](https://paperswithcode.com/method/he-initialization).
-
-## Forward propagation
-The forward pass of input values through each layer of the neural network, applying the activation functions to produce the final output.
-
-Forward propagation is important for the following reasons:
-
-1. **Generates predictions** – By moving the input through the network we obtain the predicted output, which is necessary for both training and inference.
-2. **Computes loss** – When training the predicted output is compared against the true labels to compute the loss, which quantifies the error.
-3. **Facilitates backpropagation** – the activations and intermediate outputs computed during forward propagation are used in backpropagation to compute gradients.
-
-### Activation functions
-An activation function in a neural network defines how the weighted sum of the input is transformed into an output from one of the nodes of a layer in the network.
-
-The activation values are the outputs from the neurons in the network after their inputs have been processed through these activation functions.  These values provide some measure of the degree to which the feature represented by the neuron is "active" in influencing the output.
-
-This implementation uses two kinds of activation functions: ReLU and Softmax activation functions.
-
-#### Rectified linear unit (ReLU) activation
-
-The way ReLU works is if the input is negative or zero, then the neuron stays off (e.g. output is zero).  If the input is positive, then the neuron turns on, and gives an output equal to the input.
-
-$$
-ReLU(x) = max(0,x)
-$$
-
-#### Softmax activation
-Takes a bunch of numbers and turns them into probabilities that will all add up to one.  By doing this, we can use the given scores and use them as a probability for the specific neuron being calculated.
-$$
-\sigma(z)_i = \frac{e^{z_i}}{\sum_{j=i}^{K}{e^{z_j}}}
-$$
-It works by first inflating each score exponentially (by raising $e$ to the power of the score); this ensures that all numbers are positive and growing larger numbers more than lower ones.
-
-Next each of these new numbers are divided by the sum of all of the numbers.  This ensures that they are all now between 0 and 1, and represent probabilities.
-
-This results in a list of probabilities that say, “If someone picks randomly based on these scores, here’s the chance they would choose each one.”
-
-
-> [!NOTE]
-> **Softmax activation example**<p>
-> Suppose you have a group of three friends and each one gives a score for how much they like a certain movie.<p>
-> You want to turn these scores into probabilities, showing how likely it is that each person will pick this movie as their favorite.<p>
-> Let say they give scores of 2, 1, 0 for a movie. Using Softmax you can convert those scores into probabilities like this:
-> 1. Exponentials: $e^2, e^1, e^0 \approx 7.39, 2.72, 1$
-> 2. Total sum: $7.39 + 2.72 + 1 = 11.11$
-> 3. Probabilities: $\frac{7.39}{11.11} \approx 0.665, \frac{2.72}{11.11} \approx 0.245, \frac{1}{11.11} \approx 0.090$<p><p>
->
-> So, we know that the highest score of 2 has a 66.5% probability, the score of 1 a 24.5%, and the score of 0 a 9% chance of being chosen.
-
-## Back propagation
-The reversed flow of the forward pass, by propagating the error from the output layer until reaching the input layer, passing through the hidden layers.
-
-When a neural network makes a prediction, you calculate the loss, which is the difference between the predicted value and the actual value.
-
-Back propagation computes how much each neuron’s output contributed to that loss (using the chain rule of differentiation).
-
-The gradient is this contribution — it tells the network how much each neuron needs to adjust its parameters (weights and biases) to reduce the loss in future predictions.
-
-Through iterative updates, back propagation allows the network to improve its performance on a given task by improving its accuracy.
-
-### Updating weights
-
-The weights are updated in the backwards pass such that the new weight equals old weight minus learning rate times gradient of loss with respect to weight.
-
-```c
-layer->weights[idx] -= learning_rate * (output_grad[i] + input[j])
-```
-
-### Update bias
-
-The new bias equals the old bias minus the learning rate times the gradient of loss with respect to bias.
-
-```c
-layer->biases[i] -= learning_rate * output_grad[i];
-```
-
-### Input gradient calculation
-
-The input gradient is an optional parameter.
-
-```c
-input_grad[j] += output_grad[i] * layer->weights[idx];
-```
+It consists of three layers:
+- **Input layer** which accepts 28x28 pixel images flattened into a 784 dimensional vector.
+- **Hidden layer** containing 256 neurons.
+- **Output layer** containing 10 neurons -- one for each class of digit to be predicted.
 
 ## Training
 
-Once forward and backward propagation have been implemented, you have a neural network that is ready to be trained.
-
-Training involves calling these propagation functions in a loop to adjust the network's weights and biases, minimizing the loss and enhancing the model's ability to make accurate predictions with each pass.
-
-### Steps
-
-1. Training is done in batches (`BATCH_SIZE`) based on a subset (`TRAIN_SPLIT`) of the overall number of images (`data.nImages`) loaded
-2. Training consists of:
-   - A forward pass of the input to the hidden layer
-     - normalize the elements of hidden_output array to be >= 0.
-   - A forward pass from the hidden layer to the output layer
-   - Apply softmax to final_output
+The model was trained with the dataset over 100 epochs.  Based on that, it's clear that subsequent epochs past 50 don't increase the accuracy significantly.
 
 ![](training_plot.png)
 
-After running training across the dataset with 100 epochs, subsequent epochs past 50 don't increase the accuracy significantly.
+## Info
 
-## User interface
-
-- display a 10x10 grid of a random sampling of images from the dataset.
-- the user should be able to select one of those images
-- when the user selects an image, on the right side it should display the prediction of the NN of what number is in the image.
-- under that, a pair of "thumbs up"/"thumbs down" buttons that allow the user to indicate whether the guess was correct
-- under that, a running score of correct predictions / total predictions
+- Neural network implemented & trained in ANSI C.
+- Plot generated using Python & Matplotlib.
+- User interface implemented in Javascript/HTML/CSS.
+- Prediction service implemented as a Python lambda.
+- Deployment to AWS using Terraform to create & configure lambdas & API gateway.
 
 ## References
 
