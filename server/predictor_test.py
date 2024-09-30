@@ -1,8 +1,65 @@
 import unittest
+import random
+from json import dumps
+from unittest.mock import mock_open, patch
 from math import exp, sqrt
 from predictor import Layer, Network, forward, softmax, predict, INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE
 
+
 class TestNeuralNetwork(unittest.TestCase):
+    def setUp(self):
+        # Sample data representing a trained model in JSON format
+        self.model_data = {
+            'hidden': {
+                'input_size': INPUT_SIZE,
+                'output_size': HIDDEN_SIZE,
+                'weights': [random() for _ in range(INPUT_SIZE * HIDDEN_SIZE)],
+                'biases': [random() for _ in range(HIDDEN_SIZE)]
+            },
+            'output': {
+                'input_size': HIDDEN_SIZE,
+                'output_size': OUTPUT_SIZE,
+                'weights': [random() for _ in range(HIDDEN_SIZE * OUTPUT_SIZE)],
+                'biases': [random() for _ in range(OUTPUT_SIZE)]
+            }
+        }
+
+        # Convert to JSON string
+        self.model_json = dumps(self.model_data)
+
+    @patch('builtins.open', new_callable=mock_open, read_data=dumps({}))
+    @patch('json.load')
+    def test_init_from_model(self, mock_json_load, mock_file):
+        """ Test the init_from_model constructor of the Network class """
+        # Set the mock return value for json.load to the model data
+        mock_json_load.return_value = self.model_data
+
+        # Call the method
+        network = Network.init_from_model('dummy_model_file.json')
+
+        # Check that the hidden layer is properly initialized
+        self.assertIsNotNone(network.hidden)
+        self.assertEqual(network.hidden.input_size, self.model_data['hidden']['input_size'])
+        self.assertEqual(network.hidden.output_size, self.model_data['hidden']['output_size'])
+        self.assertEqual(network.hidden.weights, self.model_data['hidden']['weights'])
+        self.assertEqual(network.hidden.biases, self.model_data['hidden']['biases'])
+
+        # Check that the output layer is properly initialized
+        self.assertIsNotNone(network.output)
+        self.assertEqual(network.output.input_size, self.model_data['output']['input_size'])
+        self.assertEqual(network.output.output_size, self.model_data['output']['output_size'])
+        self.assertEqual(network.output.weights, self.model_data['output']['weights'])
+        self.assertEqual(network.output.biases, self.model_data['output']['biases'])
+
+        # Ensure the file was opened and read
+        mock_file.assert_called_once_with('dummy_model_file.json', 'r')
+        mock_json_load.assert_called_once()
+
+    def tearDown(self):
+        # Clean up Network singleton state after each test
+        Network._Network__instance = None  # Reset the singleton instance
+
+
 
     def test_layer_initialization(self):
         input_size = 3
@@ -62,7 +119,7 @@ class TestNeuralNetwork(unittest.TestCase):
 
     def test_predict(self):
         # Mock a simple network for testing
-        network = Network(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
+        network = Network.create_for_testing(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
 
         # Set up predefined weights and biases for predict function
         network.hidden.weights = [0.2] * (INPUT_SIZE * HIDDEN_SIZE)

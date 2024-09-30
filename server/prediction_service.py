@@ -1,14 +1,14 @@
+from os.path import splitext
 import base64
 import random
 import boto3
 import json
 from image_data import metadata
 from predictor import predict, load_trained_network
-from io import BytesIO
-from PIL import Image
+import struct
 
 # AWS S3 Configuration
-S3_BUCKET = 'com.eqbridges.mnist-img-archive'
+S3_BUCKET = 'com.eqbridges.mnist-archive'
 REGION = 'us-east-1'
 
 
@@ -43,18 +43,14 @@ def load_mnist_image(image_key):
 
     # Get the image from S3
     response = s3.get_object(Bucket=S3_BUCKET, Key=image_key)
-    image_data = response['Body'].read()
+    raw_file = response['Body'].read()
 
-    # Load the image using PIL
-    image = Image.open(BytesIO(image_data))
+    # Each float32 takes 4 bytes, so we unpack the binary data as float32 values
+    num_floats = len(raw_file) // 4
+    image_data = struct.unpack(f'>{num_floats}f', raw_file)
 
-    # Convert the image to a flattened list of pixel values
-    pixel_values = list(image.getdata())
-
-    # Normalize the pixel values to be between 0 and 1
-    normalized_values = [pixel / 255.0 for pixel in pixel_values]
-
-    return normalized_values
+    # The result is a flat list of normalized pixel values, which can be fed into a neural network
+    return list(image_data)
 
 
 def object_name_from_filename(filename):
@@ -68,10 +64,11 @@ def object_name_from_filename(filename):
     return f"{valueA}/{valueB}/{filename}"
 
 
-
 def predict_value(filename):
-    object_name = object_name_from_filename(filename)
-    filedata = load_mnist_image(object_name)
+    obj_name = object_name_from_filename(filename)
+    name, _ = splitext(obj_name)
+    raw_obj_name = f'{name}.raw'
+    filedata = load_mnist_image(raw_obj_name)
     network = load_trained_network()
     predicted_value = predict(network, filedata)
     return predicted_value
@@ -159,6 +156,6 @@ def handle_post_prediction(event):
 
 # For testing locally
 if __name__ == '__main__':
-    random_image_urls = get_random_image_urls(n=10)
+    random_image_urls = get_random_image_urls(n=1)
     for image in random_image_urls:
         print(image)

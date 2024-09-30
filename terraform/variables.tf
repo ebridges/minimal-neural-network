@@ -7,5 +7,5 @@ variable "region" {
 variable "bucket_name" {
   description = "S3 bucket name to be used for storing MNIST images"
   type        = string
-  default     = "com.eqbridges.mnist-img-archive"
+  default     = "com.eqbridges.mnist-archive"
 }

@@ -1,5 +1,5 @@
 from math import exp, sqrt
-from json import load
+import json
 from random import random
 from typing import List
 
@@ -14,51 +14,52 @@ class Layer:
         scale = sqrt(float(2) / input_sz)
         return [random() * float(2) * scale for _ in range(total_sz)]
 
-    def __init__(self, input_size : int, output_size : int):
-        self.weights : List[float] = Layer.kaiming_he(input_size, input_size * output_size)
-        self.biases : List[float] = [float(0)] * output_size
+    def __init__(self, input_size : int, output_size : int, weights: List[float] = None, biases: List[float] = None):
+        if weights:
+            self.weights = weights
+        else:
+            self.weights : List[float] = Layer.kaiming_he(input_size, input_size * output_size)
+        if biases:
+            self.biases = biases
+        else:
+            self.biases : List[float] = [float(0)] * output_size
         self.input_size : int = input_size
         self.output_size : int = output_size
 
 
-    def new_from_model(self, weights, biases, input_sz, output_sz):
-        self.weights = weights
-        self.biases = biases
-        self.input_size = input_sz
-        self.output_size = output_sz
-
 class Network:
     __instance = None
 
-    @staticmethod
-    def trained_instance(model_file):
-        """ Static access method. """
-        if Network.__instance == None:
-            Network(model_file)
-
-        return Network.__instance
-
-    def __init__(self,model_file):
-        """ Virtually private constructor. """
+    def __init__(self):
         if Network.__instance != None:
             raise Exception("This class is a singleton!")
-        else:
+        self.hidden = None
+        self.output = None
+        pass
+
+    @classmethod
+    def init_from_model(cls, model_file):
+        if cls.__instance == None:
+            cls.__instance = cls()
             with open(model_file, 'r') as file:
-                model = load(file)
-            h = model['hidden']
-            self.hidden = Layer.new_from_model(h.weights, h.biases, h.input_size, h.output_size)
-            o = model['output']
-            self.output = Layer.new_from_model(o.weights, o.biases, o.input_size, o.output_size)
-            Network.__instance = self
+                model = json.load(file)
+                h = model['hidden']
+                cls.__instance.hidden = Layer(h['input_size'], h['output_size'], h['weights'], h['biases'])
+                o = model['output']
+                cls.__instance.output = Layer(o['input_size'], o['output_size'], o['weights'], o['biases'])
+        return cls.__instance
 
 
-    def __init__(self, input_sz : int, hidden_sz : int, output_sz : int):
-        self.hidden : Layer = Layer(input_sz, hidden_sz)
-        self.output: Layer = Layer(hidden_sz, output_sz)
+    @classmethod
+    def create_for_testing(cls, input_sz : int, hidden_sz : int, output_sz : int):
+        cls.__instance = cls()
+        cls.__instance.hidden = Layer(input_sz, hidden_sz)
+        cls.__instance.output = Layer(hidden_sz, output_sz)
+        return cls.__instance
 
 
 def load_trained_network():
-    return Network.trained_instance(TRAINED_MODEL_FILE)
+    return Network.init_from_model(TRAINED_MODEL_FILE)
 
 
 def softmax(input : List[float]):
@@ -95,24 +96,3 @@ def predict(network : Network, image : List[float]) -> int:
             max_idx = i
 
     return max_idx
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

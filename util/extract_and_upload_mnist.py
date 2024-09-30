@@ -94,15 +94,15 @@ def list_objects(output_dir):
             print(object_name_from_filename(img_filename))
 
 if __name__ == "__main__":
-    # import argparse
+    import argparse
 
-    # parser = argparse.ArgumentParser(description="Extract MNIST images and upload to S3.")
-    # parser.add_argument("image_file", help="Path to the MNIST images file.")
-    # parser.add_argument("label_file", help="Path to the MNIST labels file.")
-    # parser.add_argument("output_dir", help="Output directory to save PNG images.")
-    # parser.add_argument("bucket_name", help="S3 bucket name for uploading images.")
+    parser = argparse.ArgumentParser(description="Extract MNIST images and upload to S3.")
+    parser.add_argument("image_file", help="Path to the MNIST images file.")
+    parser.add_argument("label_file", help="Path to the MNIST labels file.")
+    parser.add_argument("output_dir", help="Output directory to save PNG images.")
+    parser.add_argument("bucket_name", help="S3 bucket name for uploading images.")
 
-    # args = parser.parse_args()
+    args = parser.parse_args()
 
-    # main(args.image_file, args.label_file, args.output_dir, args.bucket_name)
-    list_objects('img')
+    main(args.image_file, args.label_file, args.output_dir, args.bucket_name)
+    # list_objects('img')
