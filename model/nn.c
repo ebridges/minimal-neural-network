@@ -15,7 +15,7 @@
 #define TRAINING_STATS_LOG "log/training-stats.csv"
 #define TRAIN_IMG_PATH "data/train-images.idx3-ubyte"
 #define TRAIN_LBL_PATH "data/train-labels.idx1-ubyte"
-#define TRAINED_MODEL_FILE "data/trained-model.json"
+#define TRAINED_MODEL_FILE "server/trained-model.json"
 
 /// @brief A type definition to represent each layer in the network.
 /// @param weights A flattened array representing the weight matrix.
