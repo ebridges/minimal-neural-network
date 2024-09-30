@@ -31,21 +31,29 @@ def extract_mnist_images(image_file, label_file, output_dir):
         for i in range(img_num):
             # Read image data
             img_data = img_f.read(img_rows * img_cols)
-            image = np.frombuffer(img_data, dtype=np.uint8).reshape((img_rows, img_cols))
+            buffer = np.frombuffer(img_data, dtype=np.uint8)
+            image = buffer.reshape((img_rows, img_cols))
 
             # Read label data
             label = struct.unpack('>B', lbl_f.read(1))[0]
 
             # Generate a UUID for the image
-            img_filename = f"{serial_num:05d}-{label}.png"
+            img_filename = f"{serial_num:05d}-{label}"
             serial_num += 1
-            img_path = os.path.join(output_dir, img_filename)
+            img_path = os.path.join(output_dir, f'{img_filename}.png')
 
             # Save the image as PNG
             img = Image.fromarray(image)
             img = img.convert("L")  # Convert to grayscale
             img.save(img_path)
             print(f"Saved: {img_path}")
+
+            # Save the image as byte data
+            normalized_values = (buffer.astype(np.float32) / 255.0).tobytes()  # Convert to 32-bit float and normalize
+            raw_path = os.path.join(output_dir, f'{img_filename}.raw')
+            with open(raw_path, 'wb') as raw_f:
+                raw_f.write(normalized_values)
+
 
 
 def object_name_from_filename(filename):
@@ -63,7 +71,7 @@ def upload_images_to_s3(output_dir, bucket_name):
     s3_client = boto3.client('s3')
 
     for img_filename in os.listdir(output_dir):
-        if img_filename.endswith('.png'):
+        if img_filename.endswith('.png') or img_filename.endswith('.raw') :
             img_path = os.path.join(output_dir, img_filename)
 
             s3_object_name = object_name_from_filename(img_filename)
