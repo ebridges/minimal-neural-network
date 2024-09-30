@@ -68,7 +68,7 @@ resource "aws_lambda_function" "mnist_lambda" {
   function_name = "mnist-predictor"
   role          = aws_iam_role.lambda_execution_role.arn
   handler       = "prediction_service.lambda_handler"
-  runtime       = "python3.9"
+  runtime       = "python3.11"
 
   filename         = data.archive_file.lambda_zip.output_path
   source_code_hash = filebase64sha256(data.archive_file.lambda_zip.output_path)
