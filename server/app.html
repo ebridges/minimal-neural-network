@@ -206,14 +206,13 @@
       total: 0
     };
 
-    // Mock function for getting prediction from backend
     async function getPrediction(url) {
       parsed_url = URL.parse(url)
       const filename = parsed_url.pathname.split('/').pop(); // Extract the filename from the URL
       try {
-        const response = await fetch('https://84egt42ybl.execute-api.us-east-1.amazonaws.com/dev/prediction/'+filename);
+        const response = await fetch('https://84egt42ybl.execute-api.us-east-1.amazonaws.com/dev/prediction/'+filename, { method: 'POST'});
         const result = await response.json();
-        return result['predicted_result']
+        return result['predicted_value']
       } catch (error) {
         console.error('Error fetching prediction for image: '+filename, error);
       }
@@ -260,6 +259,9 @@
 
         // Add the 'selected' class to the clicked image
         e.target.classList.add('selected');
+
+        // Get the URL of the clicked image's src attribute
+        const url = e.target.src;
 
         // Update selected image and prediction
         const predictedNumber = await getPrediction(url);
