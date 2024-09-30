@@ -17,6 +17,7 @@ def generate_s3_presigned_url(s3_client, bucket, key, expiration=3600):
     return s3_client.generate_presigned_url('get_object', Params={'Bucket': bucket,
             'ResponseContentType': 'image/png', 'Key': key}, ExpiresIn=expiration)
 
+
 def get_random_image_urls(n=100):
     """
     Returns n random image URLs from the bucket.
@@ -104,6 +105,7 @@ def lambda_handler(event, context):
             "body": json.dumps({'error': f'unrecognized method/path: "{http_method} {path}"'})
         }
 
+
 # route handler functions
 def handle_get_ui(event):
     print('handle_get_ui called')
@@ -124,6 +126,7 @@ def handle_get_ui(event):
         "isBase64Encoded": True
     }
 
+
 def handle_get_urls(event):
     n = int(event.get('queryStringParameters', {}).get('n', 100))  # Default to 100 if n is not provided
     data = get_random_image_urls(n)
@@ -134,6 +137,7 @@ def handle_get_urls(event):
         },
         "body": json.dumps(data)
     }
+
 
 def handle_post_prediction(event):
     filename = event.get('pathParameters', {}).get('filename', '')
