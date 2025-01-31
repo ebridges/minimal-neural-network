@@ -1,8 +1,5 @@
 # Minimal Neural Network
 
-> [!NOTE]
-> This is derivative of [an article on X](https://x.com/konradgajdus/status/1837196363735482396) with several other sources to fill out my background.
-
 This is an implementation of a simple neural network using only the C standard library.  It's trained with the [MNIST archive](https://yann.lecun.com/exdb/mnist/) of handwritten numbers. The trained model is saved off in a platform independent way to be used by a Python lambda that does actual predictions using a simple HTML/JS user interface.
 
 It consists of three layers:
